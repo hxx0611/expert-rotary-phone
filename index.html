@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机抽选器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .title-container {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .title-input {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            padding: 10px 20px;
+            border: 2px dashed transparent;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            outline: none;
+            cursor: pointer;
+            min-width: 200px;
+            display: inline-block;
+        }
+
+        .title-input:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .title-input:focus {
+            border: 2px dashed #667eea;
+            background-color: rgba(102, 126, 234, 0.1);
+            cursor: text;
+        }
+
+        .title-input:empty:before {
+            content: attr(data-placeholder);
+            color: #999;
+        }
+
+        .title-hint {
+            font-size: 0.7em;
+            color: #888;
+            margin-top: 8px;
+            font-weight: normal;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .title-container:hover .title-hint {
+            opacity: 1;
+        }
+
+        .input-section {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .stats {
+            text-align: center;
+            color: #666;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            animation: slideUp 0.5s ease;
+            position: relative;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .result-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .result-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 1.3em;
+            font-weight: bold;
+            animation: popIn 0.6s ease forwards;
+            opacity: 0;
+            transform: scale(0);
+        }
+
+        .result-item:nth-child(1) { animation-delay: 0.1s; }
+        .result-item:nth-child(2) { animation-delay: 0.2s; }
+        .result-item:nth-child(3) { animation-delay: 0.3s; }
+        .result-item:nth-child(4) { animation-delay: 0.4s; }
+        .result-item:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes popIn {
+            0% {
+                opacity: 0;
+                transform: scale(0) rotate(-180deg);
+            }
+            50% {
+                transform: scale(1.2) rotate(10deg);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        .close-btn {
+            background: #f0f0f0;
+            color: #333;
+            width: auto;
+            padding: 10px 30px;
+        }
+
+        .close-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: -10px;
+            animation: fall linear forwards;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .roll-animation {
+            font-size: 2em;
+            color: #667eea;
+            animation: roll 0.1s infinite;
+        }
+
+        @keyframes roll {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title-container">
+            <div 
+                class="title-input" 
+                contenteditable="true" 
+                data-placeholder="🎯 随机抽选器"
+                id="customTitle"
+            >🎯 随机抽选器</div>
+            <div class="title-hint">点击标题可自定义修改</div>
+        </div>
+        
+        <div class="input-section">
+            <label for="nameList">粘贴微信昵称名单（每行一个）：</label>
+            <textarea id="nameList" placeholder="张三&#10;李四&#10;王五&#10;赵六&#10;..."></textarea>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="pickCount">抽取人数：</label>
+                <input type="number" id="pickCount" value="1" min="1" max="20">
+            </div>
+        </div>
+
+        <button id="drawBtn">🎲 开始抽选</button>
+
+        <div class="stats" id="stats">
+            已加载 0 人 | 剩余可抽选：0 人
+        </div>
+    </div>
+
+    <!-- 结果弹窗 -->
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <h2 class="modal-title">🎉 抽选结果</h2>
+            <div class="result-list" id="resultList"></div>
+            <button class="close-btn" id="closeModal">确定</button>
+        </div>
+    </div>
+
+    <script>
+        const nameListTextarea = document.getElementById('nameList');
+        const pickCountInput = document.getElementById('pickCount');
+        const drawBtn = document.getElementById('drawBtn');
+        const resultModal = document.getElementById('resultModal');
+        const resultList = document.getElementById('resultList');
+        const closeModal = document.getElementById('closeModal');
+        const statsDisplay = document.getElementById('stats');
+        const customTitle = document.getElementById('customTitle');
+
+        let allNames = [];
+        let remainingNames = [];
+
+        function updateNames() {
+            const text = nameListTextarea.value.trim();
+            allNames = text.split('\n')
+                .map(name => name.trim())
+                .filter(name => name.length > 0);
+            remainingNames = [...allNames];
+            updateStats();
+        }
+
+        function updateStats() {
+            statsDisplay.textContent = `已加载 ${allNames.length} 人 | 剩余可抽选：${remainingNames.length} 人`;
+            drawBtn.disabled = remainingNames.length === 0;
+        }
+
+        function handleTitleInput() {
+            if (customTitle.innerHTML.trim() === '') {
+                customTitle.innerHTML = '🎯 随机抽选器';
+            }
+        }
+
+        nameListTextarea.addEventListener('input', updateNames);
+        
+        customTitle.addEventListener('focus', function() {
+            if (this.innerHTML === '🎯 随机抽选器') {
+                setTimeout(() => {
+                    const selection = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(this);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }, 0);
+            }
+        });
+        
+        customTitle.addEventListener('blur', handleTitleInput);
+        
+        customTitle.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.blur();
+            }
+        });
+
+        drawBtn.addEventListener('click', function() {
+            const pickCount = parseInt(pickCountInput.value) || 1;
+            
+            if (remainingNames.length === 0) {
+                alert('没有可抽选的人员了！');
+                return;
+            }
+
+            if (pickCount > remainingNames.length) {
+                alert(`最多只能抽取 ${remainingNames.length} 人！`);
+                return;
+            }
+
+            drawBtn.innerHTML = '<span class="roll-animation">🎲 抽选中...</span>';
+            drawBtn.disabled = true;
+
+            let count = 0;
+            const maxCount = 20 + Math.floor(Math.random() * 10);
+            const interval = setInterval(() => {
+                count++;
+                if (count >= maxCount) {
+                    clearInterval(interval);
+                    performDraw(pickCount);
+                }
+            }, 100);
+        });
+
+        function performDraw(pickCount) {
+            const results = [];
+            
+            for (let i = 0; i < pickCount; i++) {
+                if (remainingNames.length === 0) break;
+                
+                const randomIndex = Math.floor(Math.random() * remainingNames.length);
+                const selectedName = remainingNames.splice(randomIndex, 1)[0];
+                results.push(selectedName);
+            }
+
+            showResults(results);
+            updateStats();
+            
+            drawBtn.innerHTML = '🎲 开始抽选';
+            drawBtn.disabled = false;
+        }
+
+        function showResults(results) {
+            resultList.innerHTML = '';
+            
+            results.forEach((name, index) => {
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                item.textContent = name;
+                item.style.animationDelay = `${index * 0.1}s`;
+                resultList.appendChild(item);
+            });
+
+            createConfetti();
+            resultModal.classList.add('show');
+        }
+
+        function createConfetti() {
+            const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'];
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                    confetti.style.width = (Math.random() * 10 + 5) + 'px';
+                    confetti.style.height = (Math.random() * 10 + 5) + 'px';
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
+
+        closeModal.addEventListener('click', () => {
+            resultModal.classList.remove('show');
+        });
+
+        resultModal.addEventListener('click', (e) => {
+            if (e.target === resultModal) {
+                resultModal.classList.remove('show');
+            }
+        });
+
+        updateNames();
+    </script>
+</body>
+</html>
